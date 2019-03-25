@@ -23,4 +23,4 @@ cp build/libs/*.jar ../build-output/
 
 echo ""
 echo " Build completed!!!"
-echo ""
+echo " "
