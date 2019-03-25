@@ -1,0 +1,64 @@
+# pipeline for rulesengine
+
+groups:
+- name: helloworld-Service
+  jobs:
+  - service-unit
+
+resources:
+- name: service-repo
+  type: git
+  source:
+    uri: https://github.com/Raji-Mohan/springboot-helloworld.git
+    branch: master
+- name: deploy-dev-env
+  type: cf
+  source:
+    api:             {{pws-api}}
+    username:        {{deploy-username}}
+    password:        {{deploy-password}}
+    skip_cert_check: false
+    organization:    {{pws-organization}}
+    space:           {{pws-staging-space}}
+
+jobs:
+- name: service-unit
+  public: true
+  serial: true
+  plan:
+  - get: service-repo
+    trigger: true
+  - task: CreateArchive
+    privileged: true
+    file: service-repo/ci/tasks/build-service/task.yml
+#    on_failure:
+#      put: slack-alert
+#      params:
+#        channels: ci-pipeline
+#        text: |
+#          The $BUILD_PIPELINE_NAME build failed!
+#          https://channel.slack.com/archives/ci-pipeline/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+#        username: concourse_user
+#        icon_url: http://downloadicons.net/sites/default/files/error-icons-44565.png
+  - put: deploy-dev-env
+    params:
+      manifest: build-output/manifest.yml
+      path: build-output/*.jar
+#    on_failure:
+#      put: slack-alert
+#      params:
+#        channels: ci-pipeline
+#        text: |
+#          The $BUILD_PIPELINE_NAME failed deployment to dev space.
+#          https://channel.slack.com/archives/ci-pipeline/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+#        username: concourse_user
+#        icon_url: http://downloadicons.net/sites/default/files/error-icons-44565.png
+#    on_success:
+#     put: slack-alert
+#     params:
+#       channels: ci-pipeline
+#       text: |
+#         The $BUILD_PIPELINE_NAME successfully deployed to dev space.
+#         https://channel.slack.com/archives/ci-pipeline/pipelines/$BUILD_PIPELINE_NAME/jobs/$BUILD_JOB_NAME/builds/$BUILD_NAME
+#       username: concourse_user
+#       icon_url: http://vignette2.wikia.nocookie.net/legouniverse/images/f/f5/Jay_render.PNG/revision/latest?cb=20120406164257
